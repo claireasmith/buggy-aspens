@@ -1,0 +1,257 @@
+---
+title: "432 Group Work v6 - Nestor"
+author: "Nestor"
+date: '2019-04-26'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Loading libraries
+library(ggplot2)
+library(ape)
+library(ggtree)
+library(vegan)
+library(reshape2)
+library(dplyr)
+library(tidyr)
+library(tibble)
+
+#Loading data
+DryadDataFile2014=read.csv("./WisAsp_2014-5_DryadData_2014.csv")
+DryadDataFile2015=read.csv("./WisAsp_2014-5_DryadData_2015.csv")
+```
+
+## Selecting only required data columns from raw data set
+
+```{r}
+MyData2014=select(DryadDataFile2014,IDNUM,TotalDefChem2014,CT2014,Salicortin2014,Tremulacin2014,PG2014,FreeFeeder,LeafModifier,WoodModifier,Ant,Cecidomyiidae,Tenthredinidae,Nepticulidae,Gracilliaridae,Agromyzidae,Notodontidae,Tortricidae,Aphididae,Formicidae,Chrysomelidae,Pentatomidae,Membracidae,Harmandia,Phyllocolpa,PetioleGall,LeafEdgeMine,SerpMine,BlotchMine,LombardyMine,Gluphisia,GreenNematus,RustylinedLeaftier,ObliqueBandedLeafRoller,SmokeyAphids,GreenAphids,Lasius_neoniger)
+
+MyData2015=select(DryadDataFile2015,IDNUM,TotalDefChem2015,CT2015,Salicortin2015,Tremulacin2015,PG2015,FreeFeeder,LeafModifier,WoodModifier,Ant,Cecidomyiidae,Tenthredinidae,Nepticulidae,Graciliaridae,Lyonetiidae,Agromyzidae,Megalopodidae,Notodontidae,Noctuidae,Tortricidae,Aphididae,Formicidae,Chrysomelidae,Delphacidae,Pentatomidae,Harmandia,Phyllocolpa,PetioleGall,LeafEdgeMine,SerpMine,CottonwoodMine,BlotchMine,LombardyMine,BlackMine,LeafCurlMidge,CottonwoodDagger,RustylinedLeaftier,ObliqueBandedLeafRoller,GreenAphids,SmokeyAphids,Formica_glacialis,Lasius_neoniger,Lasius_alienus)
+```
+
+## Splitting the data columns into groups by functional group, insect family and insect species
+
+```{r}
+fxnlgrps2014=select(DryadDataFile2014,FreeFeeder,LeafModifier,WoodModifier,Ant)
+fxnlgrps2015=select(DryadDataFile2015,FreeFeeder,LeafModifier,WoodModifier,Ant)
+fams2014=select(DryadDataFile2014,Cecidomyiidae,Tenthredinidae,Nepticulidae,Gracilliaridae,Agromyzidae,
+                Notodontidae,Tortricidae,Aphididae,Formicidae,Chrysomelidae,Pentatomidae,Membracidae)
+fams2015=select(DryadDataFile2015,Cecidomyiidae,Tenthredinidae,Nepticulidae,Graciliaridae,Lyonetiidae,Agromyzidae,Megalopodidae,Notodontidae,Noctuidae,Tortricidae,
+                Aphididae,Formicidae,Chrysomelidae,Delphacidae,Pentatomidae)
+species2014=select(DryadDataFile2014,Harmandia,Phyllocolpa,PetioleGall,LeafEdgeMine,SerpMine,BlotchMine,LombardyMine,Gluphisia,GreenNematus,RustylinedLeaftier,
+                   ObliqueBandedLeafRoller,SmokeyAphids,GreenAphids,Lasius_neoniger)
+species2015=select(DryadDataFile2015,Harmandia,Phyllocolpa,PetioleGall,LeafEdgeMine,SerpMine,CottonwoodMine,BlotchMine,LombardyMine,BlackMine,LeafCurlMidge,CottonwoodDagger,
+                   RustylinedLeaftier,ObliqueBandedLeafRoller,GreenAphids,SmokeyAphids,Formica_glacialis,Lasius_neoniger,Lasius_alienus)
+```
+
+## Removing NAs in the data to avoid errors when running functions later
+
+```{r}
+cleanspecies2014=drop_na(species2014)
+cleanspecies2015=drop_na(species2015)
+cleanfxnlgrps2014=drop_na(fxnlgrps2014)
+cleanfxnlgrps2015=drop_na(fxnlgrps2015)
+cleanfams2014=drop_na(fams2014)
+cleanfams2015=drop_na(fams2015)
+```
+
+## Creating distance matrixes for the 6 groups of data (3 groups of annual data for 2 years)
+
+```{r}
+speciesdist2014=vegdist(cleanspecies2014)
+speciesdist2015=vegdist(cleanspecies2015)
+fxnlgrpsdist2014=vegdist(cleanfxnlgrps2014)
+fxnlgrpsdist2015=vegdist(cleanfxnlgrps2015)
+famsdist2014=vegdist(cleanfams2014)
+famsdist2015=vegdist(cleanfams2015)
+```
+
+## Generating ggtree using neighbour-joining method
+
+```{r}
+speciestree2014=nj(speciesdist2014)
+speciestree2015=nj(speciesdist2015)
+fxnlgrpstree2014=nj(fxnlgrpsdist2014)
+fxnlgrpstree2015=nj(fxnlgrpsdist2015)
+famstree2014=nj(famsdist2014)
+famstree2015=nj(famsdist2015)
+```
+
+## Plotting the 6 trees vs total defensive chemicals to decipher any trends/patterns when the data is visually presented
+
+```{r}
+speciesggtree2014=ggtree(speciestree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = TotalDefChem2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Total Defensive Chemicals") +
+  theme(legend.position = "right")
+speciesggtree2015=ggtree(speciestree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = TotalDefChem2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Total Defensive Chemicals") +
+  theme(legend.position = "right")
+fxnlgrpsggtree2014=ggtree(fxnlgrpstree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = TotalDefChem2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Total Defensive Chemicals") +
+  theme(legend.position = "right")
+fxnlgrpsggtree2015=ggtree(fxnlgrpstree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = TotalDefChem2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Total Defensive Chemicals") +
+  theme(legend.position = "right")
+famsggtree2014=ggtree(famstree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = TotalDefChem2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Total Defensive Chemicals") +
+  theme(legend.position = "right")
+famsggtree2015=ggtree(famstree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = TotalDefChem2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Total Defensive Chemicals") +
+  theme(legend.position = "right")
+```
+
+## Plotting the 6 trees vs Salicortin to decipher any trends/patterns when the data is visually presented
+
+```{r}
+speciesggtreevs2014=ggtree(speciestree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = Salicortin2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Salicortin") +
+  theme(legend.position = "right")
+speciesggtreevs2015=ggtree(speciestree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = Salicortin2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Salicortin") +
+  theme(legend.position = "right")
+fxnlgrpsggtreevs2014=ggtree(fxnlgrpstree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = Salicortin2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Salicortin") +
+  theme(legend.position = "right")
+fxnlgrpsggtreevs2015=ggtree(fxnlgrpstree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = Salicortin2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Salicortin") +
+  theme(legend.position = "right")
+famsggtree2014vs=ggtree(famstree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = Salicortin2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Salicortin") +
+  theme(legend.position = "right")
+famsggtree2015vs=ggtree(famstree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = Salicortin2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Salicortin") +
+  theme(legend.position = "right")
+```
+
+## Plotting the 6 trees vs Tremulacin to decipher any trends/patterns when the data is visually presented
+
+```{r}
+speciesggtreevt2014=ggtree(speciestree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = Tremulacin2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Tremulacin") +
+  theme(legend.position = "right")
+speciesggtreevt2015=ggtree(speciestree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = Tremulacin2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Tremulacin") +
+  theme(legend.position = "right")
+fxnlgrpsggtreevt2014=ggtree(fxnlgrpstree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = Tremulacin2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Tremulacin") +
+  theme(legend.position = "right")
+fxnlgrpsggtreevt2015=ggtree(fxnlgrpstree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = Tremulacin2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Tremulacin") +
+  theme(legend.position = "right")
+famsggtree2014vt=ggtree(famstree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = Tremulacin2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Tremulacin") +
+  theme(legend.position = "right")
+famsggtree2015vt=ggtree(famstree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = Tremulacin2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Tremulacin") +
+  theme(legend.position = "right")
+```
+
+## Plotting the 6 trees vs phenolic glycosides to decipher any trends/patterns when the data is visually presented
+
+```{r}
+speciesggtreevpg2014=ggtree(speciestree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = PG2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Phenolic glycosides") +
+  theme(legend.position = "right")
+speciesggtreevpg2015=ggtree(speciestree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = PG2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Phenolic glycosides") +
+  theme(legend.position = "right")
+fxnlgrpsggtreevpg2014=ggtree(fxnlgrpstree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = PG2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Phenolic glycosides") +
+  theme(legend.position = "right")
+fxnlgrpsggtreevpg2015=ggtree(fxnlgrpstree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = PG2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Phenolic glycosides") +
+  theme(legend.position = "right")
+famsggtreevpg2014=ggtree(famstree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = PG2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Phenolic glycosides") +
+  theme(legend.position = "right")
+famsggtreevpg2015=ggtree(famstree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = PG2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Phenolic glycosides") +
+  theme(legend.position = "right")
+```
+
+## Plotting the 6 trees vs condensed tannins to decipher any trends/patterns when the data is visually presented
+
+```{r}
+speciesggtreevct2014=ggtree(speciestree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = CT2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Condensed tannins") +
+  theme(legend.position = "right")
+speciesggtreevct2015=ggtree(speciestree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = CT2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Condensed tannins") +
+  theme(legend.position = "right")
+fxnlgrpsggtreevct2014=ggtree(fxnlgrpstree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = CT2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Condensed tannins") +
+  theme(legend.position = "right")
+fxnlgrpsggtreevct2015=ggtree(fxnlgrpstree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = CT2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Condensed tannins") +
+  theme(legend.position = "right")
+famsggtreevct2014=ggtree(famstree2014, layout = "rectangular") %<+% MyData2014 +
+  geom_tippoint(aes(colour = CT2014), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Condensed tannins") +
+  theme(legend.position = "right")
+famsggtreevct2015=ggtree(famstree2015, layout = "rectangular") %<+% MyData2015 +
+  geom_tippoint(aes(colour = CT2015), size = I(2), shape = I(18)) +
+  scale_colour_gradientn(colours = rainbow(10), na.value = "grey50", 
+                         name = "Condensed tannins") +
+  theme(legend.position = "right")
+```
